@@ -74,6 +74,9 @@ def check_board_other(ctx):
     if check_config(ctx,[ device('ad9361-phy'), device('cf-ad9361-lpc',4) ]):
         return 'ad9361'
 
+    if check_config(ctx,[ device('axi-ad9144-hpc',4), device('axi-ad9680-hpc',2) ]):
+        return 'daq2'
+
     if check_config(ctx,[ device('adrv9009-phy'), device('adrv9009-phy-b') ]):
         return 'adrv9009-dual'
     if check_config(ctx,[device('adrv9009-phy')]):
@@ -92,12 +95,15 @@ def ip_scan_auto():
     for host in HOSTNAMES:
         for ip in socket.gethostbyname_ex(host):
             if type(ip)==list  and ip:
-                addresses.append(ip[0])
+                if ip[0] not in addresses:
+                    addresses.append(ip[0])
     for address in addresses:
         ctx = check_iio(address)
         if ctx:
             name = check_board_other(ctx)
-            boards.append(board(name,"ip:"+address))
+            b = board(name,"ip:"+address)
+            if b not in boards:
+                boards.append(b)
     return boards
 
 def ip_scan(subnet):
@@ -125,8 +131,15 @@ def scan_all():
     # FIND IP
     bs = ip_scan_auto()
     #bs = ip_scan("192.168.86")
-    boards = boards + bs
+    if bs not in boards:
+        boards = boards + bs
     return boards
+
+def find_device(name):
+    for b in scan_all():
+        if b.name == name:
+            return True
+    return False
 
 if __name__ == "__main__":
     bs = scan_all()
@@ -134,6 +147,6 @@ if __name__ == "__main__":
         print(b.uri)
         print(b.name)
         print('---------')
-
+    print(find_device('daq2'))
 
 
